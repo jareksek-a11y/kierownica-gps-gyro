@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Symulator Honda Pro Max v5.0 (GPS & Gyro)</title>
+    <title>Symulator Honda Pro Max v5.1 (GPS & Gyro)</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
@@ -56,7 +56,7 @@
             background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 100%);
             position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.7), inset 0 5px 15px rgba(0,0,0,0.8);
             display: flex; justify-content: center; align-items: center;
-            will-change: transform; /* Optymalizacja dla żyroskopu */
+            will-change: transform; 
         }
         #steering-wheel::before, #steering-wheel::after { content: ''; position: absolute; background-color: var(--wheel-color); }
         #steering-wheel::before { width: 100%; height: 4.5vmin; top: 50%; transform: translateY(-50%); }
@@ -102,7 +102,6 @@
             mask-size: contain; -webkit-mask-size: contain;
         }
 
-        /* --- DOLNY PANEL --- */
         #left-signal { bottom: 5%; left: 5%; }
         #right-signal { bottom: 5%; right: 5%; }
         .blinking { animation: blinker 1.2s linear infinite; }
@@ -116,7 +115,7 @@
         #engine-btn.engine-on { background-color: #008800; }
         #wash-btn:disabled { opacity: 0.3; }
 
-        /* --- NOWY: PRĘDKOŚCIOMIERZ GPS --- */
+        /* --- PRĘDKOŚCIOMIERZ GPS --- */
         #speedometer {
             position: absolute; bottom: 5%; left: 27.5%; transform: translateX(-50%);
             background-color: #0a0a0a; border: 0.5vmin solid #333; color: #00ff00;
@@ -124,6 +123,14 @@
             box-shadow: inset 0 0 15px rgba(0, 255, 0, 0.2), 0 4px 6px rgba(0,0,0,0.5);
             display: flex; align-items: baseline; gap: 1vmin; z-index: 10;
         }
+        
+        /* Zarezerwowane miejsce na równe 3 cyfry */
+        #speed-val {
+            display: inline-block;
+            min-width: 3ch;
+            text-align: right;
+        }
+        
         .speed-unit { font-size: 2.5vmin; color: #888; }
     </style>
 </head>
@@ -171,13 +178,10 @@
 
     <script>
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let sensorsInit = false; // Flaga dla GPS i Żyroskopu
+        let sensorsInit = false; 
         
         function unlockSystem() {
-            // 1. Odblokowanie Audio
             if (audioCtx.state === 'suspended') { audioCtx.resume(); }
-            
-            // 2. Odblokowanie Sensoryki (GPS)
             if (!sensorsInit) {
                 sensorsInit = true;
                 startGPS();
@@ -210,7 +214,6 @@
             playTone(300, 'square', 0.05, 0.07); 
         }
 
-        // --- GPS (Prędkościomierz) ---
         let gpsWatchId = null;
         const speedVal = document.getElementById('speed-val');
         
@@ -232,7 +235,6 @@
             }
         }
 
-        // --- WYCIERACZKI ---
         const wiperBlade = document.getElementById('wiper-blade');
         const washBtn = document.getElementById('wash-btn');
         const flashBtn = document.getElementById('flash-btn');
@@ -312,7 +314,6 @@
         }
         document.querySelectorAll('.w-icon').forEach(icon => icon.addEventListener('click', () => { setW(icon.getAttribute('data-level')); }));
 
-        // --- ŚWIATŁA ---
         function setL(l) {
             currentLvl = parseInt(l);
             document.querySelectorAll('.l-icon').forEach(i => i.classList.remove('active-icon'));
@@ -327,11 +328,9 @@
         });
         flashBtn.addEventListener('pointerup', () => setL(currentLvl));
 
-        // --- KIEROWNICA (DOTYK + ŻYROSKOP) ---
         const wheel = document.getElementById('wheel-container'), swheel = document.getElementById('steering-wheel');
         let isDragging = false, currentRot = 0, startA = 0, blinkMode = 'off', hazardOn = false;
 
-        // Sterowanie dotykowe (nadpisuje żyroskop)
         wheel.addEventListener('pointerdown', e => {
             if (e.target.closest('#horn-btn')) return;
             isDragging = true;
@@ -349,21 +348,15 @@
         });
         window.addEventListener('pointerup', () => isDragging = false);
 
-        // Sterowanie żyroskopem
         window.addEventListener('deviceorientation', (e) => {
-            if (isDragging) return; // Ignoruj żyroskop jeśli użytkownik kręci palcem
-            
+            if (isDragging) return; 
             let tilt = 0;
-            // Dla tabletów w układzie horyzontalnym odchylenie na boki to najczęściej oś beta
             if (window.innerWidth > window.innerHeight) {
                 tilt = e.beta;
             } else {
-                tilt = e.gamma; // W pionie (rzadko używane w symulatorze)
+                tilt = e.gamma; 
             }
-            
-            // Wygładzenie i zapobieganie dziwnym przeskokom (jeśli leży płasko)
             if (tilt !== null && Math.abs(e.gamma) < 80) {
-                // Skalowanie czułości (opcjonalnie można pomnożyć tilt)
                 updateSteering(tilt * 1.5); 
             }
         });
@@ -372,7 +365,6 @@
             let delta = newRot - currentRot;
             if (delta > 180) delta -= 360; if (delta < -180) delta += 360;
             
-            // Odbijanie kierunkowskazów
             if (!hazardOn) {
                 if (delta < -2 && blinkMode === 'right') { 
                     blinkMode = 'off'; updateBlinkers(); playStalkClick();
@@ -386,7 +378,6 @@
             swheel.style.transform = `rotate(${currentRot}deg)`;
         }
 
-        // --- KLAKSON ---
         const horn = document.getElementById('horn-btn');
         let h1, h2;
         horn.addEventListener('pointerdown', () => {
@@ -398,7 +389,6 @@
         });
         horn.addEventListener('pointerup', () => { if(h1){h1.stop(); h2.stop();} });
 
-        // --- KIERUNKOWSKAZY I AWARYJNE ---
         const lSig = document.getElementById('left-signal'), rSig = document.getElementById('right-signal'), haz = document.getElementById('hazard-btn');
         function updateBlinkers() {
             lSig.classList.remove('blinking'); rSig.classList.remove('blinking'); haz.classList.remove('blinking-hazard');
